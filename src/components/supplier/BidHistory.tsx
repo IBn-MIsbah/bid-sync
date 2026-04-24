@@ -1,72 +1,181 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMyBids } from "../../services/api/supplier-api";
-
-interface Bid {
-  id: string;
-  rfpId: string;
-  supplierId: string;
-  amount: number | null;
-  proposal: string;
-  proposalPath: string | null;
-  status: string;
-  rejectionReason: string;
-  createdAt: string;
-  rfp: {
-    id: string;
-    title: string;
-    category: string;
-    budget: string;
-    currency: string;
-    deadline: string;
-    status: string;
-    buyer: {
-      companyName: string;
-    };
-  };
-}
+import { bidSchema, bidsResponseSchema, type Bid } from "@/schemas/bid.schema";
+import {
+  Award,
+  Clock,
+  DollarSign,
+  FileText,
+  AlertCircle,
+  XCircle,
+  Eye,
+  TrendingUp,
+  Calendar,
+  Building2,
+  Package,
+  Send,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
 
 const BidHistory: React.FC = () => {
+  const navigate = useNavigate();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchBids = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getMyBids();
+
+      // Validate response with Zod
+      const validatedResponse = bidsResponseSchema.parse(response);
+
+      // Validate each bid
+      const validatedBids =
+        validatedResponse.data?.map((bid) => bidSchema.parse(bid)) || [];
+      setBids(validatedBids);
+    } catch (err) {
+      console.error("Failed to fetch bids:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load bid history",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchBids = async () => {
-      try {
-        setLoading(true);
-        const response = await getMyBids();
-        // Handle different response structures
-        const bidData = response.data?.data || response.data || [];
-        setBids(Array.isArray(bidData) ? bidData : []);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch bids:", err);
-        setError("Failed to load bid history");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchBids();
+  }, [fetchBids]);
+
+  const getStatusIcon = useCallback((status: string) => {
+    switch (status) {
+      case "AWARDED":
+        return <Award className="w-4 h-4" />;
+      case "ACTIVE":
+        return <TrendingUp className="w-4 h-4" />;
+      case "PENDING_APPROVAL":
+        return <Clock className="w-4 h-4" />;
+      case "WITHDRAWN":
+        return <Trash2 className="w-4 h-4" />;
+      case "REJECTED":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
   }, []);
+
+  const getStatusColor = useCallback((status: string) => {
+    switch (status) {
+      case "AWARDED":
+        return "text-green-500 bg-green-500/10 border-green-500/20";
+      case "ACTIVE":
+        return "text-blue-500 bg-blue-500/10 border-blue-500/20";
+      case "PENDING_APPROVAL":
+        return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+      case "WITHDRAWN":
+        return "text-slate-500 bg-slate-500/10 border-slate-500/20";
+      case "REJECTED":
+        return "text-destructive bg-destructive/10 border-destructive/20";
+      case "CLOSED":
+        return "text-muted-foreground bg-muted/50 border-border";
+      default:
+        return "text-muted-foreground bg-muted/50 border-border";
+    }
+  }, []);
+
+  const getStatusLabel = useCallback((status: string) => {
+    switch (status) {
+      case "AWARDED":
+        return "Awarded";
+      case "ACTIVE":
+        return "Active";
+      case "PENDING_APPROVAL":
+        return "Pending Approval";
+      case "WITHDRAWN":
+        return "Withdrawn";
+      case "REJECTED":
+        return "Rejected";
+      case "CLOSED":
+        return "Closed";
+      default:
+        return status;
+    }
+  }, []);
+
+  const handleViewRFP = useCallback(
+    (rfpId: string) => {
+      navigate(`/dashboard/rfps/${rfpId}`);
+    },
+    [navigate],
+  );
+
+  const handleSubmitFinancialBid = useCallback(
+    (bid: Bid) => {
+      navigate(`/dashboard/bids/${bid.id}/financial`);
+    },
+    [navigate],
+  );
+
+  const handleWithdrawBid = useCallback(async () => {
+    if (!selectedBid) return;
+
+    setIsSubmitting(true);
+    try {
+      // API call to withdraw bid
+      // await withdrawBid({ bidId: selectedBid.id, reason: withdrawReason });
+
+      // Refresh bids after withdrawal
+      await fetchBids();
+      setShowWithdrawModal(false);
+      setWithdrawReason("");
+      setSelectedBid(null);
+    } catch (err) {
+      console.error("Failed to withdraw bid:", err);
+      setError("Failed to withdraw bid. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedBid, withdrawReason, fetchBids]);
+
+  const stats = {
+    total: bids.length,
+    active: bids.filter((b) => b.status === "ACTIVE").length,
+    awarded: bids.filter((b) => b.status === "AWARDED").length,
+    pending: bids.filter((b) => b.status === "PENDING_APPROVAL").length,
+  };
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner} />
-        <p>Loading your bids...</p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-mono text-muted-foreground">
+          LOADING_BID_HISTORY...
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.errorContainer}>
-        <p>{error}</p>
+      <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-8 text-center">
+        <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+        <p className="text-destructive font-medium mb-2">Failed to load bids</p>
+        <p className="text-sm text-muted-foreground mb-4">{error}</p>
         <button
-          onClick={() => window.location.reload()}
-          style={styles.retryButton}
+          onClick={fetchBids}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
+          <RefreshCw className="w-4 h-4" />
           Retry
         </button>
       </div>
@@ -75,295 +184,306 @@ const BidHistory: React.FC = () => {
 
   if (bids.length === 0) {
     return (
-      <div style={styles.emptyContainer}>
-        <p>You haven't placed any bids yet.</p>
-        <p>Browse RFPs to start bidding!</p>
+      <div className="space-y-6">
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            No Bids Yet
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            You haven't placed any bids yet. Browse RFPs to start bidding!
+          </p>
+          <button
+            onClick={() => navigate("/dashboard/rfps")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Browse Opportunities
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>My Bid History</h2>
-      <div style={styles.bidsList}>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <FileText className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">My Bid History</h1>
+        </div>
+        <p className="text-muted-foreground">
+          Track and manage all your submitted bids
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              TOTAL BIDS
+            </span>
+            <FileText className="w-4 h-4 text-primary" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              ACTIVE
+            </span>
+            <TrendingUp className="w-4 h-4 text-blue-500" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats.active}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              AWARDED
+            </span>
+            <Award className="w-4 h-4 text-green-500" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats.awarded}</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-muted-foreground">
+              PENDING
+            </span>
+            <Clock className="w-4 h-4 text-amber-500" />
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
+        </div>
+      </div>
+
+      {/* Bids List */}
+      <div className="space-y-4">
         {bids.map((bid) => (
-          <div key={bid.id} style={styles.bidCard}>
-            <div style={styles.bidHeader}>
-              <h3 style={styles.rfpTitle}>{bid.rfp.title}</h3>
-              <span
-                style={{
-                  ...styles.statusBadge,
-                  ...getStatusStyle(bid.status),
-                }}
+          <div
+            key={bid.id}
+            className="bg-card border border-border rounded-xl p-6 transition-all duration-200 hover:shadow-lg"
+          >
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {bid.rfp.title}
+                </h3>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Building2 className="w-4 h-4" />
+                    <span>{bid.rfp.buyer.companyName}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Package className="w-4 h-4" />
+                    <span>{bid.rfp.category}</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border ${getStatusColor(bid.status)}`}
               >
-                {bid.status}
-              </span>
+                {getStatusIcon(bid.status)}
+                {getStatusLabel(bid.status)}
+              </div>
             </div>
 
-            <div style={styles.bidInfo}>
-              <div style={styles.infoRow}>
-                <strong>Buyer:</strong> {bid.rfp.buyer.companyName}
-              </div>
-              <div style={styles.infoRow}>
-                <strong>Category:</strong> {bid.rfp.category}
-              </div>
-              <div style={styles.infoRow}>
-                <strong>Budget Range:</strong> {bid.rfp.currency}{" "}
-                {Number(bid.rfp.budget).toLocaleString()}
-              </div>
-              <div style={styles.infoRow}>
-                <strong>Your Bid Amount:</strong>{" "}
+            {/* Bid Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pb-4 border-b border-border">
+              <div>
+                <p className="text-xs font-mono text-muted-foreground mb-1">
+                  YOUR BID
+                </p>
                 {bid.amount ? (
-                  <span style={styles.bidAmount}>
-                    {bid.rfp.currency} {bid.amount.toLocaleString()}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-4 h-4 text-green-500" />
+                    <p className="text-lg font-bold text-green-500">
+                      {bid.rfp.currency} {bid.amount.toLocaleString()}
+                    </p>
+                  </div>
                 ) : (
-                  <span style={styles.pendingAmount}>Pending approval</span>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                    <p className="text-sm text-amber-500">Pending approval</p>
+                  </div>
                 )}
               </div>
-              <div style={styles.infoRow}>
-                <strong>Proposal:</strong> {bid.proposal}
-              </div>
-              <div style={styles.infoRow}>
-                <strong>Submitted:</strong>{" "}
-                {new Date(bid.createdAt).toLocaleString()}
-              </div>
-              <div style={styles.infoRow}>
-                <strong>Deadline:</strong>{" "}
-                {new Date(bid.rfp.deadline).toLocaleDateString()}
-              </div>
-              {bid.rejectionReason && (
-                <div style={styles.rejectionReason}>
-                  <strong>Rejection Reason:</strong> {bid.rejectionReason}
+              <div>
+                <p className="text-xs font-mono text-muted-foreground mb-1">
+                  BUDGET RANGE
+                </p>
+                <div className="flex items-center gap-1">
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    {bid.rfp.currency} {Number(bid.rfp.budget).toLocaleString()}
+                  </p>
                 </div>
-              )}
+              </div>
+              <div>
+                <p className="text-xs font-mono text-muted-foreground mb-1">
+                  SUBMITTED
+                </p>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    {new Date(bid.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-mono text-muted-foreground mb-1">
+                  DEADLINE
+                </p>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    {new Date(bid.rfp.deadline).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div style={styles.bidActions}>
-              {bid.status === "PENDING_APPROVAL" && (
-                <button style={styles.pendingButton} disabled>
-                  Waiting for Approval
-                </button>
-              )}
-              {bid.status === "ACTIVE" && !bid.amount && (
+            {/* Proposal */}
+            <div className="mb-4">
+              <p className="text-xs font-mono text-muted-foreground mb-2">
+                PROPOSAL
+              </p>
+              <p className="text-sm text-foreground bg-muted/30 p-3 rounded-lg">
+                {bid.proposal}
+              </p>
+            </div>
+
+            {/* Rejection Reason */}
+            {bid.rejectionReason && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-xs font-mono text-destructive mb-1">
+                  REJECTION REASON
+                </p>
+                <p className="text-sm text-destructive">
+                  {bid.rejectionReason}
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleViewRFP(bid.rfpId)}
+                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="text-sm font-medium">View RFP</span>
+              </button>
+
+              {bid.status === "PENDING_APPROVAL" && !bid.amount && (
                 <button
-                  onClick={() => {
-                    /* Navigate to financial bid submission */
-                  }}
-                  style={styles.submitButton}
+                  onClick={() => handleSubmitFinancialBid(bid)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  Submit Financial Bid
+                  <Send className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    Submit Financial Bid
+                  </span>
                 </button>
               )}
+
               {(bid.status === "PENDING_APPROVAL" ||
                 bid.status === "ACTIVE") && (
                 <button
                   onClick={() => {
-                    /* Handle withdraw */
+                    setSelectedBid(bid);
+                    setShowWithdrawModal(true);
                   }}
-                  style={styles.withdrawButton}
+                  className="flex items-center gap-2 px-4 py-2 border border-destructive/30 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                 >
-                  Withdraw Bid
+                  <Trash2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Withdraw Bid</span>
                 </button>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && selectedBid && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-destructive" />
+              <h3 className="text-xl font-bold text-foreground">
+                Withdraw Bid
+              </h3>
+            </div>
+
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to withdraw your bid for "
+              {selectedBid.rfp.title}"?
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-xs font-mono text-muted-foreground mb-2">
+                Reason (Optional)
+              </label>
+              <textarea
+                value={withdrawReason}
+                onChange={(e) => setWithdrawReason(e.target.value)}
+                placeholder="Why are you withdrawing this bid?"
+                rows={3}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowWithdrawModal(false);
+                  setWithdrawReason("");
+                  setSelectedBid(null);
+                }}
+                className="flex-1 px-4 py-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWithdrawBid}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Withdrawing..." : "Yes, Withdraw Bid"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
-
-const getStatusStyle = (status: string) => {
-  switch (status) {
-    case "PENDING_APPROVAL":
-      return styles.statusPending;
-    case "ACTIVE":
-      return styles.statusActive;
-    case "AWARDED":
-      return styles.statusAwarded;
-    case "WITHDRAWN":
-      return styles.statusWithdrawn;
-    case "CLOSED":
-      return styles.statusClosed;
-    default:
-      return styles.statusDefault;
-  }
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
-    padding: "2rem",
-  },
-  title: {
-    fontSize: "1.5rem",
-    marginBottom: "1.5rem",
-    color: "#1a202c",
-  },
-  bidsList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
-  },
-  bidCard: {
-    backgroundColor: "#fff",
-    borderRadius: "8px",
-    padding: "1.5rem",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-    border: "1px solid #e2e8f0",
-  },
-  bidHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "1rem",
-    paddingBottom: "0.5rem",
-    borderBottom: "1px solid #e2e8f0",
-  },
-  rfpTitle: {
-    fontSize: "1.125rem",
-    fontWeight: "600",
-    color: "#2d3748",
-    margin: 0,
-  },
-  statusBadge: {
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontSize: "0.75rem",
-    fontWeight: "600",
-  },
-  statusPending: {
-    backgroundColor: "#fef5e7",
-    color: "#f39c12",
-  },
-  statusActive: {
-    backgroundColor: "#e3f7fc",
-    color: "#00a3c4",
-  },
-  statusAwarded: {
-    backgroundColor: "#e8f5e9",
-    color: "#4caf50",
-  },
-  statusWithdrawn: {
-    backgroundColor: "#fbe9e7",
-    color: "#f44336",
-  },
-  statusClosed: {
-    backgroundColor: "#f5f5f5",
-    color: "#9e9e9e",
-  },
-  statusDefault: {
-    backgroundColor: "#e8eaf6",
-    color: "#3f51b5",
-  },
-  bidInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-    marginBottom: "1rem",
-  },
-  infoRow: {
-    fontSize: "0.875rem",
-    color: "#4a5568",
-  },
-  bidAmount: {
-    color: "#2f855a",
-    fontWeight: "bold",
-  },
-  pendingAmount: {
-    color: "#f39c12",
-    fontStyle: "italic",
-  },
-  rejectionReason: {
-    marginTop: "0.5rem",
-    padding: "0.5rem",
-    backgroundColor: "#fff5f5",
-    borderRadius: "4px",
-    color: "#c53030",
-    fontSize: "0.875rem",
-  },
-  bidActions: {
-    display: "flex",
-    gap: "0.75rem",
-    marginTop: "1rem",
-    paddingTop: "0.75rem",
-    borderTop: "1px solid #e2e8f0",
-  },
-  pendingButton: {
-    padding: "0.5rem 1rem",
-    backgroundColor: "#cbd5e0",
-    color: "#4a5568",
-    border: "none",
-    borderRadius: "4px",
-    fontSize: "0.875rem",
-    cursor: "not-allowed",
-  },
-  submitButton: {
-    padding: "0.5rem 1rem",
-    backgroundColor: "#3182ce",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    fontSize: "0.875rem",
-    cursor: "pointer",
-  },
-  withdrawButton: {
-    padding: "0.5rem 1rem",
-    backgroundColor: "#fff",
-    color: "#e53e3e",
-    border: "1px solid #e53e3e",
-    borderRadius: "4px",
-    fontSize: "0.875rem",
-    cursor: "pointer",
-  },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "3rem",
-  },
-  spinner: {
-    width: "40px",
-    height: "40px",
-    border: "4px solid #f3f3f3",
-    borderTop: "4px solid #3182ce",
-    borderRadius: "50%",
-    animation: "spin 1s linear infinite",
-  },
-  errorContainer: {
-    textAlign: "center",
-    padding: "2rem",
-    backgroundColor: "#fff5f5",
-    borderRadius: "8px",
-    color: "#c53030",
-  },
-  retryButton: {
-    marginTop: "1rem",
-    padding: "0.5rem 1rem",
-    backgroundColor: "#3182ce",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
-  emptyContainer: {
-    textAlign: "center",
-    padding: "3rem",
-    color: "#718096",
-  },
-};
-
-// Add spinner animation
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(styleSheet);
 
 export default BidHistory;
