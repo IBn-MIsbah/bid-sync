@@ -11,6 +11,7 @@ import { api } from "./api-client";
 export const postLogin = async (data: LoginInput): Promise<Login> => {
   try {
     const response = await api.post("/auth/login", data);
+    console.log("[LOGIN]", response.data);
     return response.data;
   } catch (error) {
     errorHandler("Auth", error);
@@ -21,6 +22,7 @@ export const postLogin = async (data: LoginInput): Promise<Login> => {
 export const postLogout = async (): Promise<Logout> => {
   try {
     const response = await api.post("/auth/logout");
+    console.log("[LOGOUT]", response.data);
     return response.data;
   } catch (error) {
     errorHandler("Logout: ", error);
@@ -31,6 +33,7 @@ export const postLogout = async (): Promise<Logout> => {
 export const getMe = async (): Promise<Me> => {
   try {
     const response = await api.get("/auth/me");
+    console.log("[ME]", response.data);
     const parsedResponse = meSchema.parse(response.data);
 
     return parsedResponse;
