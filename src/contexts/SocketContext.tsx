@@ -1,5 +1,6 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-refresh/only-export-components */
+// SocketContext.tsx
 import {
   createContext,
   useContext,
@@ -21,19 +22,45 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     let newSocket: Socket | null = null;
 
     if (isAuthenticated && user?.id) {
+      console.log("🟢 Connecting socket for user:", user.id);
+
       newSocket = io(baseURL, {
         query: { userId: user.id },
         transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      });
+
+      // Connection event handlers
+      newSocket.on("connect", () => {
+        console.log("✅ Socket connected successfully");
+      });
+
+      newSocket.on("connect_error", (error) => {
+        console.error("❌ Socket connection error:", error);
+      });
+
+      newSocket.on("disconnect", (reason) => {
+        console.log("🔌 Socket disconnected:", reason);
+      });
+
+      newSocket.on("connected", (data) => {
+        console.log("📡 Socket server confirmation:", data);
       });
 
       setSocket(newSocket);
-      console.log(`🔌 Socket connected for user: ${user.id}`);
+    } else {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
     }
 
     return () => {
       if (newSocket) {
-        newSocket.close();
-        setSocket(null);
+        console.log("🧹 Cleaning up socket connection");
+        newSocket.disconnect();
       }
     };
   }, [isAuthenticated, user?.id]);
