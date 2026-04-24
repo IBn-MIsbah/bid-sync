@@ -50,7 +50,6 @@ export const postRegister = async (data: unknown) => {
 };
 
 export const updateCredentials = async (data: {
-  username: string;
   tempPassword: string;
   newPassword: string;
 }) => {

@@ -17,6 +17,7 @@ export const getAllUsers = async () => {
 };
 export const getUserDetails = async (id: string) => {
   const response = await api.get(`/admin/users/${id}`);
+  console.log(response.data);
   return response.data;
 };
 export const getPendingSuppliers = async () => {
@@ -36,6 +37,18 @@ export const verifySupplier = async (
   return response.data;
 };
 
+export const verifyBuyer = async (
+  id: string,
+  status: string,
+  reason?: string,
+) => {
+  const response = await api.patch(`/admin/buyer/${id}/verify`, {
+    status,
+    rejectionReason: reason,
+  });
+  return response.data;
+};
+
 export const getActivityLogs = async (filters: LogFilters) => {
   // Converts { page: 1, logType: 'system' } to ?page=1&logType=system
   const params = new URLSearchParams(filters as any).toString();
@@ -45,5 +58,12 @@ export const getActivityLogs = async (filters: LogFilters) => {
 
 export const getAllConversationsForAdmin = async () => {
   const response = await api("/admin/audit");
+  return response.data;
+};
+
+export const blockUser = async (id: string, isActive: boolean) => {
+  const response = await api.patch(`/admin/users/${id}/status`, {
+    isActive: isActive,
+  });
   return response.data;
 };

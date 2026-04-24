@@ -18,15 +18,20 @@ const baseUserSchema = {
   firstName: z.string(),
   lastName: z.string(),
   email: z.email(),
-  isActive: z.boolean(), // Removed nullable() as backend filters for isActive: true
+  isActive: z.boolean(),
+  createdAt: z.coerce.date(),
 };
 
 const supplierProfileSchema = z.object({
   status: z.string().nullable(),
   phone: z.string().nullable(),
   address: z.string().nullable(),
+  businessName: z.string().nullable(),
   taxId: z.string().nullable(),
   registrationNumber: z.string().nullable(),
+  verificationStatus: z.boolean().nullable(),
+  businessType: z.string().nullable(),
+  acceptLegalTerms: z.boolean().nullable().optional(),
   yearsInBusiness: z.number().nullable(),
   categories: z.array(z.string()).nullable(),
   bio: z.string().nullable(),
@@ -36,10 +41,15 @@ const supplierProfileSchema = z.object({
 
 const buyerProfileSchema = z.object({
   companyName: z.string().nullable(),
+  companyType: z.string().nullable(),
+  industrySector: z.string().nullable(),
+  status: z.string().nullable(),
+  taxId: z.string().nullable(),
   phone: z.string().nullable(),
   address: z.string().nullable(),
   department: z.string().nullable(),
   position: z.string().nullable(),
+  documents: z.array(z.any()).optional().nullable(),
 });
 
 const supplierUserSchema = z.object({

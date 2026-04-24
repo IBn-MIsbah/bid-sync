@@ -25,8 +25,9 @@ export const createRfpsInputSchema = z.object({
   title: z.string().min(5, { error: "Title need atleast 5 letters!" }),
   description: z.string().optional(),
   category: z.string(),
-  budget: z.coerce.number(),
-  status: z.enum(RfpStatus),
+  budget: z.coerce.number().default(0),
+  status: z.enum(RfpStatus).default("OPEN"),
+  currency: z.enum(["USD", "ETB"]),
   deadline: z.coerce.date(),
   priority: z.enum(RfpPriority),
 });

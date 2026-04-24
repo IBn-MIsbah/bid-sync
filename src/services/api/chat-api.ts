@@ -22,3 +22,13 @@ export const getMessages = async (conversationId: string) => {
   const response = await api.get(`/chat/${conversationId}/messages`);
   return response.data;
 };
+
+export const markMessageAsRead = async (conversationId: string) => {
+  const response = await api.post(`/chat/mark/${conversationId}`);
+  return response.data;
+};
+
+export const getUnreadMessageCount = async () => {
+  const response = await api.get("/chat/unread-count");
+  return response.data;
+};
