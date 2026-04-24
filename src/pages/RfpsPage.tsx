@@ -1,35 +1,20 @@
 import ListCard from "../components/rfps/ListCard";
+import { FileText } from "lucide-react";
 
 const RfpsPage = () => {
   return (
-    <div
-      style={{
-        maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "2rem",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <header
-        style={{
-          marginBottom: "2rem",
-          borderBottom: "2px solid #e0e0e0",
-          paddingBottom: "1rem",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "2rem",
-            color: "#333",
-            margin: 0,
-          }}
-        >
-          Request for Proposals
-        </h1>
-        <p style={{ color: "#666", marginTop: "0.5rem" }}>
-          Browse and respond to open opportunities
+    <div className="space-y-6">
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <FileText className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">
+            Request for Proposals
+          </h1>
+        </div>
+        <p className="text-muted-foreground">
+          Browse and respond to open opportunities from verified buyers
         </p>
-      </header>
+      </div>
 
       <ListCard />
     </div>
