@@ -1,17 +1,17 @@
-import { SupplierOnboarding } from "../components/supplier/SupplierOnboarding";
+import { SupplierOnboarding } from "@/components/supplier/SupplierOnboarding";
 
 const SupplierOnboardingPage = () => {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f7fafc",
-        padding: "40px 0",
-      }}
-    >
-      <h1 style={{ textAlign: "center", color: "#2d3748" }}>
-        Supplier Onboarding
-      </h1>
+    <div className="space-y-6">
+      <div className="bg-card border border-border rounded-xl p-6">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Supplier Onboarding
+        </h1>
+        <p className="text-muted-foreground">
+          Complete your business profile and verification to start bidding on
+          RFPs
+        </p>
+      </div>
       <SupplierOnboarding />
     </div>
   );
