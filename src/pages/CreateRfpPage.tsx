@@ -1,89 +1,57 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, FileText, Info } from "lucide-react";
 import RfpsCreateForm from "../components/rfps/RfpsCreateForm";
 
 const CreateRfpPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8f9fa",
-        padding: "2rem",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "800px",
-          margin: "0 auto",
-        }}
-      >
-        {/* Header with navigation */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "2rem",
-            paddingBottom: "1rem",
-            borderBottom: "2px solid #e0e0e0",
-          }}
-        >
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 style={{ margin: 0, color: "#333" }}>Create New RFP</h1>
-            <p style={{ margin: "0.5rem 0 0 0", color: "#666" }}>
-              Fill out the form below to create a new Request for Proposal
+            <div className="flex items-center gap-3 mb-2">
+              <FileText className="w-6 h-6 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground">
+                Create New Request for Proposal
+              </h1>
+            </div>
+            <p className="text-muted-foreground">
+              Fill out the form below to create a new RFP and start receiving
+              bids from suppliers
             </p>
           </div>
           <button
-            onClick={() => navigate("/rfps")}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#5a6268")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#6c757d")
-            }
+            onClick={() => navigate("/dashboard/rfps")}
+            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            Back to RFPs
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to RFPs</span>
           </button>
         </div>
+      </div>
 
-        {/* Form Card */}
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            padding: "2rem",
-          }}
-        >
-          <RfpsCreateForm />
-        </div>
+      {/* Form Card */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <RfpsCreateForm />
+      </div>
 
-        {/* Info Note */}
-        <div
-          style={{
-            marginTop: "2rem",
-            padding: "1rem",
-            backgroundColor: "#e7f3ff",
-            borderRadius: "4px",
-            borderLeft: "4px solid #007bff",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: "14px", color: "#004085" }}>
-            <strong>Note:</strong> All fields marked with * are required. The
-            buyer ID will be automatically assigned from your account.
-          </p>
+      {/* Info Note */}
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-500 mb-1">
+              Important Information
+            </p>
+            <p className="text-sm text-muted-foreground">
+              All fields marked with * are required. The buyer information will
+              be automatically assigned from your account. Once published,
+              suppliers will be able to view and submit bids for your RFP.
+            </p>
+          </div>
         </div>
       </div>
     </div>
