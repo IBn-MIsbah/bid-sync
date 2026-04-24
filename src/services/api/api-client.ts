@@ -15,7 +15,7 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 90000,
+  timeout: 3600000,
 });
 
 let isRefreshing = false;
