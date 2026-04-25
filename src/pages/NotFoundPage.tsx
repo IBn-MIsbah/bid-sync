@@ -37,7 +37,7 @@ export const NotFoundPage: React.FC = () => {
           {/* 404 Number with Animation */}
           <div className="mb-8 relative">
             <div className="absolute inset-0 blur-3xl bg-primary/20 rounded-full animate-pulse" />
-            <h1 className="relative text-8xl md:text-9xl font-black bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-gradient">
+            <h1 className="relative text-8xl md:text-9xl font-black bg-linear-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-gradient">
               404
             </h1>
           </div>
