@@ -51,7 +51,6 @@ const BuyerRegister: React.FC = () => {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<BuyerFormData>({
     resolver: zodResolver(buyerRegisterSchema),
@@ -60,9 +59,6 @@ const BuyerRegister: React.FC = () => {
       acceptLegalTerms: false,
     },
   });
-
-  const selectedRole = watch("role");
-  console.log(selectedRole);
 
   const onSubmit = async (data: BuyerFormData) => {
     setLoading(true);
