@@ -9,6 +9,7 @@ import {
   updateBidAmount,
   joinRoom,
   startRoom,
+  awardBidById,
 } from "@/services/api/bidroom-api";
 import { BidTimer } from "./BidTimer";
 import { BidHistory } from "./BidHistory";
@@ -39,20 +40,23 @@ export const BidRoomDetail: React.FC = () => {
   const isBuyer = user?.role === "BUYER";
   const isSupplier = user?.role === "SUPPLIER";
 
-  const fetchRoom = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getRoomDetail(id!);
-      setRoom(response.data);
-    } catch (error) {
-      console.error("Failed to load room:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+  const fetchRoom = useCallback(
+    async (isInitial = false) => {
+      try {
+        if (isInitial) setLoading(true);
+        const response = await getRoomDetail(id!);
+        setRoom(response.data);
+      } catch (error) {
+        console.error("Failed to load room:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
-    fetchRoom();
+    fetchRoom(true);
   }, [fetchRoom]);
 
   useEffect(() => {
@@ -88,17 +92,17 @@ export const BidRoomDetail: React.FC = () => {
     });
 
     socket.on("room_awarded", () => {
-      fetchRoom();
+      fetchRoom(false);
     });
 
     socket.on("room_started", () => {
-      fetchRoom();
+      fetchRoom(false);
     });
     socket.on("room_cancelled", () => {
-      fetchRoom();
+      fetchRoom(false);
     });
     socket.on("invitation_updated", () => {
-      fetchRoom();
+      fetchRoom(false);
     });
 
     return () => {
@@ -143,7 +147,7 @@ export const BidRoomDetail: React.FC = () => {
         return;
       }
       await awardBidById(id!, room.currentLeadingBid.id);
-      fetchRoom();
+      fetchRoom(false);
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to award bid");
     } finally {
@@ -156,7 +160,7 @@ export const BidRoomDetail: React.FC = () => {
     setSubmitting(true);
     try {
       await startRoom(id!);
-      fetchRoom(); // Re-fetch to update status to ACTIVE
+      fetchRoom(false); // Re-fetch to update status to ACTIVE
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to start room");
     } finally {
